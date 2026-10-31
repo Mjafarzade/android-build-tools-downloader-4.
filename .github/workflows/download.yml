@@ -8,30 +8,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Windows Build Tools
         shell: bash
         run: |
-          yes | sdkmanager --licenses
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
-          REPO_OS_OVERRIDE=windows sdkmanager \
-            --sdk_root="$ANDROID_HOME" \
+          if [ ! -f "$SDKMANAGER" ]; then
+            echo "SDK Manager not found: $SDKMANAGER"
+            exit 1
+          fi
+
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses
+
+          REPO_OS_OVERRIDE=windows "$SDKMANAGER" \
+            --sdk_root="$SDK_ROOT" \
             --install "build-tools;36.0.0"
 
-          test -f "$ANDROID_HOME/build-tools/36.0.0/aapt2.exe"
+          test -f "$SDK_ROOT/build-tools/36.0.0/aapt2.exe"
 
       - name: Create ZIP
         shell: bash
         run: |
-          cd "$ANDROID_HOME/build-tools"
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          cd "$SDK_ROOT/build-tools"
           zip -r "$GITHUB_WORKSPACE/build-tools_r36_windows.zip" 36.0.0
 
       - name: Upload ZIP
