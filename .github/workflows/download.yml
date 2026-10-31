@@ -1,0 +1,42 @@
+name: Download Android Build Tools 36 for Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Windows Build Tools
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses
+
+          REPO_OS_OVERRIDE=windows sdkmanager \
+            --sdk_root="$ANDROID_HOME" \
+            --install "build-tools;36.0.0"
+
+          test -f "$ANDROID_HOME/build-tools/36.0.0/aapt2.exe"
+
+      - name: Create ZIP
+        shell: bash
+        run: |
+          cd "$ANDROID_HOME/build-tools"
+          zip -r "$GITHUB_WORKSPACE/build-tools_r36_windows.zip" 36.0.0
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-tools_r36_windows
+          path: build-tools_r36_windows.zip
+          if-no-files-found: error
